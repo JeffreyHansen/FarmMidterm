@@ -1,0 +1,15 @@
+# Unity generated
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+
+# Package cache (usually under Library)
+**/[Pp]ackage[Cc]ache/
+
+# OS junk
+.DS_Store
+Thumbs.db
