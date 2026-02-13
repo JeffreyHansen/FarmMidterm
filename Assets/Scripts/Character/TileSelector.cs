@@ -8,7 +8,7 @@ namespace Character
         [SerializeField] protected FarmTile activeTile; // good for debugging
         public FarmTile GetSelectedTile() { return activeTile; }
 
-        protected void SetActiveTile(FarmTile tile)
+        public void SetActiveTile(FarmTile tile)
         {
             if (activeTile != tile)
             {

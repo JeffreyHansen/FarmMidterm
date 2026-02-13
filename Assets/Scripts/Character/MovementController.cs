@@ -45,7 +45,7 @@ namespace Character {
             movement += transform.right * moveInput.x;
             movement += transform.forward * moveInput.y;
             movement.Normalize();
-            movement *= Time.deltaTime * acceleration;
+            movement *= Time.fixedDeltaTime * acceleration; // Fixed: use fixedDeltaTime in FixedUpdate
             rb.MovePosition(rb.position + movement);
         }
     }
