@@ -7,50 +7,95 @@ namespace Character
     {
         [SerializeField] float drag = 0.5f;
         [SerializeField] float rotationSpeed = 0.1f;
-        
+
+        [Header("Jump")]
+        [SerializeField] float jumpForce = 5f;
+
+        bool isGrounded;
+
         protected override void Start()
         {
             base.Start();
-            rb.linearDamping = drag;
+            rb.linearDamping = drag; // prevents sliding
         }
 
         public override float GetHorizontalSpeedPercent()
         {
             Vector3 horizontalVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-            return Mathf.Clamp01(horizontalVelocity.magnitude / maxVelocity);;
+            return Mathf.Clamp01(horizontalVelocity.magnitude / maxVelocity);
         }
 
-        public override void Jump() 
-        { 
-            // TODO: integrate jump support from week 2-3    
+        public override void Jump()
+        {
+            // Called externally by input system
+            if (isGrounded)
+            {
+                rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+                isGrounded = false;
+            }
         }
 
         protected override void FixedUpdate()
         {
-            base.FixedUpdate(); // TODO: remove base.FixedUpdate() when starting your integration
+            base.FixedUpdate(); // remove later if parent handles movement
             ApplyMovement();
             ClampVelocity();
             ApplyRotation();
             ApplyJump();
         }
-        
+
         void ApplyMovement()
         {
-            // TODO integrate your physics from week 2-3 
+            // Basic physics movement (camera-relative optional later)
+            Vector3 moveDir = new Vector3(moveInput.x, 0f, moveInput.y);
+
+            if (moveDir.sqrMagnitude > 1f)
+                moveDir.Normalize();
+
+            rb.AddForce(moveDir * acceleration, ForceMode.Acceleration);
         }
 
         void ApplyJump()
         {
-            // TODO integrate your jump logic from week 2-3 
+            // If parent class buffers jump input, handle it here
+            if (jumpInput && isGrounded)
+            {
+                rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+                isGrounded = false;
+            }
         }
 
-        // TODO integrate collision support from week 2-3 
-        
+        // -------- COLLISION SUPPORT (Week 2–3 integration) --------
+        void OnCollisionEnter(Collision collision)
+        {
+            CheckGround(collision);
+        }
+
+        void OnCollisionStay(Collision collision)
+        {
+            CheckGround(collision);
+        }
+
+        void CheckGround(Collision collision)
+        {
+            foreach (ContactPoint contact in collision.contacts)
+            {
+                // If surface is mostly upward-facing, treat as ground
+                if (Vector3.Dot(contact.normal, Vector3.up) > 0.5f)
+                {
+                    isGrounded = true;
+                    return;
+                }
+            }
+        }
+
+        // ----------------------------------------------------------
+
         void ClampVelocity()
         {
-            // Clamp horizontal velocity while preserving vertical (for jumping/falling)
+            // Clamp horizontal velocity while preserving vertical
             Vector3 horizontalVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-            
+
             if (horizontalVelocity.magnitude > maxVelocity)
             {
                 horizontalVelocity = horizontalVelocity.normalized * maxVelocity;
@@ -63,13 +108,11 @@ namespace Character
             Vector3 direction = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
             if (direction.magnitude > 0.5f)
             {
-                // 1. Calculate the target rotation (where we WANT to look)
                 Quaternion targetRotation = Quaternion.LookRotation(direction.normalized);
 
-                // 2. Smoothly rotate from our current rotation toward the target
                 transform.rotation = Quaternion.Slerp(
-                    transform.rotation, 
-                    targetRotation, 
+                    transform.rotation,
+                    targetRotation,
                     rotationSpeed * Time.fixedDeltaTime
                 );
             }
