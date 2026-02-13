@@ -56,12 +56,15 @@
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_TextSelector_A.cs" />
     <Compile Include="Assets/Scripts/Farming/FarmTileManager.cs" />
     <Compile Include="Assets/Doozy/ThirdPersonCamera.cs" />
+    <Compile Include="Assets/Scripts/Core/FarmingEvents.cs" />
     <Compile Include="Assets/Scripts/Character/PhysicsController.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/Benchmark02.cs" />
     <Compile Include="Assets/Scripts/Character/GridSelector.cs" />
     <Compile Include="Assets/Scripts/Character/SphereSelector.cs" />
+    <Compile Include="Assets/Scripts/UI/FarmingProgressUI.cs" />
     <Compile Include="Assets/Art/Art Credits.cs" />
     <Compile Include="Assets/Scripts/Character/AnimatedController.cs" />
+    <Compile Include="Assets/Scripts/UI/FarmingProgressUI_Setup.cs" />
     <Compile Include="Assets/Scripts/Character/TileSelector_Guide.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMP_ExampleScript_01.cs" />
     <Compile Include="Assets/TextMesh Pro/Examples &amp; Extras/Scripts/TMPro_InstructionOverlay.cs" />

@@ -7,7 +7,7 @@ namespace Character
     [RequireComponent(typeof(PlayerInput))] // Input is required and we don't store a reference
     public class PlayerController : MonoBehaviour
     {
-        [SerializeField] private TileSelector tileSelector; // Can now be any selector type or SelectorManager
+        [SerializeField] private SelectorManager selectorManager; // Use SelectorManager instead of single selector
         MovementController moveController;
         PhysicsMovement physicsMovement; // Reference to physics movement for running
         AnimatedController animatedController;
@@ -23,13 +23,13 @@ namespace Character
             // TODO: Consider Debug.Assert vs RequireComponent(typeof(...))
             Debug.Assert(moveController, "PlayerController requires a MovementController");
             
-            // Auto-find TileSelector if not assigned (search children too)
-            if (tileSelector == null)
+            // Auto-find SelectorManager if not assigned
+            if (selectorManager == null)
             {
-                tileSelector = GetComponentInChildren<TileSelector>();
+                selectorManager = GetComponent<SelectorManager>();
             }
             
-            Debug.Assert(tileSelector, "PlayerController requires a TileSelector.");
+            Debug.Assert(selectorManager, "PlayerController requires a SelectorManager.");
             
             if (!animatedController)
             {
@@ -60,19 +60,21 @@ namespace Character
         {
             if (!inputValue.isPressed) return;
             
-            if (tileSelector is SelectorManager manager)
+            if (selectorManager != null)
             {
-                manager.OnSelectorSwitchInput();
+                selectorManager.OnSelectorSwitchInput();
             }
             else
             {
-                Debug.Log($"[PlayerController] Current TileSelector is {tileSelector?.GetType().Name}. Add SelectorManager component and multiple selectors to enable switching.");
+                Debug.LogWarning("[PlayerController] No SelectorManager found for selector switching.");
             }
         }
 
         public void OnInteract(InputValue value)
         {
-            FarmTile tile = tileSelector.GetSelectedTile();
+            Debug.Log("[PlayerController] OnInteract called");
+            FarmTile tile = selectorManager.GetSelectedTile();
+            Debug.Log($"[PlayerController] Selected tile: {(tile != null ? tile.gameObject.name : "null")}");
             if (tile != null)
             {
                 tile.Interact(); // updates the condition, play the anim after
@@ -115,13 +117,13 @@ namespace Character
         [ContextMenu("Switch to Next Selector")]
         void SwitchSelector()
         {
-            if (tileSelector is SelectorManager manager)
+            if (selectorManager != null)
             {
-                manager.OnSelectorSwitchInput();
+                selectorManager.OnSelectorSwitchInput();
             }
             else
             {
-                Debug.Log($"[PlayerController] Current TileSelector is {tileSelector?.GetType().Name}. Add SelectorManager to enable switching.");
+                Debug.Log("[PlayerController] No SelectorManager found. Add SelectorManager component to enable switching.");
             }
         }
     }

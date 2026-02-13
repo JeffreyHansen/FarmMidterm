@@ -50,16 +50,24 @@ namespace Farming
 
         public void Till()
         {
+            Condition previousCondition = tileCondition;
             tileCondition = FarmTile.Condition.Tilled;
             UpdateVisual();
             tillAudio?.Play();
+            
+            // Fire farming event for progress tracking
+            FarmingEvents.TileFarmed(this, previousCondition, tileCondition);
         }
 
         public void Water()
         {
+            Condition previousCondition = tileCondition;
             tileCondition = FarmTile.Condition.Watered;
             UpdateVisual();
             waterAudio?.Play();
+            
+            // Fire farming event for progress tracking
+            FarmingEvents.TileFarmed(this, previousCondition, tileCondition);
         }
 
         private void UpdateVisual()
