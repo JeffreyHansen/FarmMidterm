@@ -25,9 +25,9 @@ namespace Character
             return Mathf.Clamp01(horizontalVelocity.magnitude / maxVelocity);
         }
 
+        // Called by the base controller when jump input is triggered
         public override void Jump()
         {
-            // Called externally by input system
             if (isGrounded)
             {
                 rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
@@ -37,32 +37,21 @@ namespace Character
 
         protected override void FixedUpdate()
         {
-            base.FixedUpdate(); // remove later if parent handles movement
+            base.FixedUpdate(); // keep unless professor says remove
             ApplyMovement();
             ClampVelocity();
             ApplyRotation();
-            ApplyJump();
         }
 
         void ApplyMovement()
         {
-            // Basic physics movement (camera-relative optional later)
+            // Uses moveInput from MovementController
             Vector3 moveDir = new Vector3(moveInput.x, 0f, moveInput.y);
 
             if (moveDir.sqrMagnitude > 1f)
                 moveDir.Normalize();
 
             rb.AddForce(moveDir * acceleration, ForceMode.Acceleration);
-        }
-
-        void ApplyJump()
-        {
-            // If parent class buffers jump input, handle it here
-            if (jumpInput && isGrounded)
-            {
-                rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-                isGrounded = false;
-            }
         }
 
         // -------- COLLISION SUPPORT (Week 2–3 integration) --------
@@ -80,7 +69,7 @@ namespace Character
         {
             foreach (ContactPoint contact in collision.contacts)
             {
-                // If surface is mostly upward-facing, treat as ground
+                // Upward-facing surface = ground
                 if (Vector3.Dot(contact.normal, Vector3.up) > 0.5f)
                 {
                     isGrounded = true;
@@ -88,12 +77,10 @@ namespace Character
                 }
             }
         }
-
         // ----------------------------------------------------------
 
         void ClampVelocity()
         {
-            // Clamp horizontal velocity while preserving vertical
             Vector3 horizontalVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
 
             if (horizontalVelocity.magnitude > maxVelocity)
@@ -106,6 +93,7 @@ namespace Character
         void ApplyRotation()
         {
             Vector3 direction = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+
             if (direction.magnitude > 0.5f)
             {
                 Quaternion targetRotation = Quaternion.LookRotation(direction.normalized);
