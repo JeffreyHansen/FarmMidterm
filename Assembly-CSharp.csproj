@@ -54,6 +54,7 @@
     <Compile Include="Assets\Scripts\Farming\FarmTile.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\EnvMapAnimator.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextSelector_A.cs" />
+    <Compile Include="Assets\Scripts\Character\PlayerFarmingController.cs" />
     <Compile Include="Assets\Scripts\Farming\FarmTileManager.cs" />
     <Compile Include="Assets\Doozy\ThirdPersonCamera.cs" />
     <Compile Include="Assets\Scripts\Core\FarmingEvents.cs" />
