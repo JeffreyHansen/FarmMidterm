@@ -50,10 +50,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextEventHandler.cs" />
+    <Compile Include="Assets\Scripts\UI\WaterMeterUI.cs" />
     <Compile Include="Assets\Doozy\PlayerController.cs" />
     <Compile Include="Assets\Scripts\Farming\FarmTile.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\EnvMapAnimator.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextSelector_A.cs" />
+    <Compile Include="Assets\Scripts\Farming\RefillZone.cs" />
     <Compile Include="Assets\Scripts\Character\PlayerFarmingController.cs" />
     <Compile Include="Assets\Scripts\Farming\FarmTileManager.cs" />
     <Compile Include="Assets\Doozy\ThirdPersonCamera.cs" />
@@ -107,6 +109,7 @@
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextEventCheck.cs" />
     <Compile Include="Assets\Scripts\Character\TileSelector.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TextMeshProFloatingText.cs" />
+    <Compile Include="Assets\Scripts\Farming\WaterResource.cs" />
     <Compile Include="Assets\Scripts\Environment\DayController.cs" />
   </ItemGroup>
   <ItemGroup>

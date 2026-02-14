@@ -9,10 +9,14 @@ namespace Character
         [SerializeField] private SelectorManager selectorManager;
 
         AnimatedController animatedController;
+        WaterResource waterResource;
+
+        bool isWateringActive; // prevents multi-drain per animation
 
         void Start()
         {
             animatedController = GetComponent<AnimatedController>();
+            waterResource = GetComponent<WaterResource>();
 
             if (selectorManager == null)
                 selectorManager = GetComponent<SelectorManager>();
@@ -20,79 +24,82 @@ namespace Character
             Debug.Assert(selectorManager, "PlayerFarmingController requires a SelectorManager.");
 
             if (!animatedController)
-            {
-                Debug.LogWarning($"No AnimatedController found on {gameObject.name}. Farming animations disabled.", this);
-            }
+                Debug.LogWarning("No AnimatedController found.");
+
+            if (!waterResource)
+                Debug.LogError("No WaterResource found on Player.");
         }
 
         // =============================
-        // SELECTOR SWITCHING
+        // SWITCH SELECTOR
         // =============================
         public void OnSwitchSelector(InputValue inputValue)
         {
             if (!inputValue.isPressed) return;
-
             selectorManager?.OnSelectorSwitchInput();
         }
 
         // =============================
-        // INTERACT WITH FARM TILE
+        // TILE INTERACT
         // =============================
         public void OnInteract(InputValue value)
         {
-            Debug.Log("[Farming] OnInteract called");
-
             FarmTile tile = selectorManager.GetSelectedTile();
-            Debug.Log($"[Farming] Selected tile: {(tile != null ? tile.name : "null")}");
-
             if (tile == null) return;
 
             tile.Interact();
 
-            switch (tile.GetCondition)
+            if (tile.GetCondition == FarmTile.Condition.Watered)
             {
-                case FarmTile.Condition.Tilled:
-                    // Future: hoe animation
-                    break;
-
-                case FarmTile.Condition.Watered:
-                    StartWatering();
-                    break;
+                TryWater();
             }
         }
 
         // =============================
-        // DIRECT WATER INPUT
+        // DIRECT WATER BUTTON (E)
         // =============================
         public void OnWater(InputValue value)
         {
             if (!value.isPressed) return;
-            StartWatering();
+            TryWater();
         }
 
-        void StartWatering()
+        // =============================
+        // CORE WATER LOGIC
+        // =============================
+        void TryWater()
         {
-            if (!animatedController) return;
+            if (!animatedController || waterResource == null)
+                return;
 
+            // 🚫 Already watering → block extra drains
+            if (isWateringActive)
+                return;
+
+            // 🚫 No water left
+            if (!waterResource.TryConsumeWater())
+            {
+                Debug.Log("Out of water! Return to the shack to refill.");
+                return;
+            }
+
+            // ✅ Lock draining until animation ends
+            isWateringActive = true;
+
+            // Play watering animation
             animatedController.SetWatering(true);
 
-            // Temporary timer (can remove if using Animator State detection)
+            // NOTE:
+            // If using Animator State detection, you can remove this Invoke later
             Invoke(nameof(StopWatering), 2.5f);
         }
 
         void StopWatering()
         {
+            isWateringActive = false;
+
             if (animatedController)
                 animatedController.SetWatering(false);
-        }
-
-        // =============================
-        // DEBUG TOOL
-        // =============================
-        [ContextMenu("Switch to Next Selector")]
-        void SwitchSelector()
-        {
-            selectorManager?.OnSelectorSwitchInput();
         }
     }
 }
