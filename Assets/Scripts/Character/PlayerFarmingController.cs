@@ -56,15 +56,7 @@ namespace Character
         // TILE INTERACT
         // =============================
         public void OnInteract(InputValue value)
-        {
-            // IMPORTANT: E key is bound to Interact but we don't want it to trigger watering
-            // Only allow Space (primary interact key) to actually interact
-            // User should remove E binding from Input Actions, or we filter it here:
-            if (Keyboard.current != null && Keyboard.current.eKey.isPressed)
-            {
-                return; // Ignore E key presses
-            }
-            
+        {    
             if (selectorManager == null)
             {
                 Debug.LogError("[PlayerFarmingController] SelectorManager is null!");
@@ -84,15 +76,6 @@ namespace Character
             {
                 TryWater();
             }
-        }
-
-        // =============================
-        // DIRECT WATER BUTTON (E)
-        // =============================
-        public void OnWater(InputValue value)
-        {
-            if (!value.isPressed) return;
-            TryWater();
         }
 
         // =============================
