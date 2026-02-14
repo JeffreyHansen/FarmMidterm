@@ -3,23 +3,19 @@ using Character;
 
 public class RefillZone : MonoBehaviour
 {
+    [SerializeField] private int refillAmount = 5;
+    [SerializeField] private bool fillToMax = true;
+
     private void OnTriggerEnter(Collider other)
     {
         WaterResource water = other.GetComponent<WaterResource>();
         if (water)
         {
-            water.StartRefill();
-            Debug.Log("Started refilling water");
-        }
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        WaterResource water = other.GetComponent<WaterResource>();
-        if (water)
-        {
-            water.StopRefill();
-            Debug.Log("Stopped refilling water");
+            if (fillToMax)
+                water.FillInstant();
+            else
+                water.AddWater(refillAmount);
+            Debug.Log("Water refilled!");
         }
     }
 }

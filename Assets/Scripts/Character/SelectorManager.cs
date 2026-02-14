@@ -10,7 +10,6 @@ namespace Character
         [SerializeField] List<TileSelector> selectors = new List<TileSelector>();
         [SerializeField] int currentSelectorIndex = 0;
         [SerializeField] bool allowSwitching = true;
-        [SerializeField] KeyCode switchKey = KeyCode.Tab;
         
         [Header("UI Feedback")]
         [SerializeField] bool showSelectorType = true;
@@ -46,7 +45,7 @@ namespace Character
                 selectors.Remove(this);
             }
 
-            Debug.Log($"[SelectorManager] Found {selectors.Count} selectors: {string.Join(", ", selectors.ConvertAll(s => s.GetType().Name))}");
+            // Found selectors
 
             // Disable all selectors initially
             foreach (TileSelector selector in selectors)

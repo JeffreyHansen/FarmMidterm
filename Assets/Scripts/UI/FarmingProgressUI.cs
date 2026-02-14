@@ -15,7 +15,6 @@ public class FarmingProgressUI : MonoBehaviour
     [Header("Progress Tracking")]
     [SerializeField] private int pointsPerTill = 2;
     [SerializeField] private int pointsPerWater = 3;
-    [SerializeField] private int pointsPerPlant = 5; // Future functionality
     [SerializeField] private int pointsRequiredPerSquare = 15; // Points needed to fully fill one square
     
     [Header("UI Positioning")]
@@ -186,16 +185,27 @@ public class FarmingProgressUI : MonoBehaviour
     public void ResetProgress()
     {
         currentProgress = 0;
+        squaresCompleted = 0;
         UpdateProgressBar();
     }
 
     void UpdateProgressBar()
     {
+        // Check if any new squares completed (award money)
+        int newSquaresCompleted = currentProgress / pointsRequiredPerSquare;
+        if (newSquaresCompleted > squaresCompleted)
+        {
+            for (int s = squaresCompleted; s < newSquaresCompleted; s++)
+            {
+                OnSquareCompleted(s);
+            }
+            squaresCompleted = newSquaresCompleted;
+        }
+        
         for (int i = 0; i < fillImages.Count; i++)
         {
             // Calculate progress for this specific square
             int squareStartPoints = i * pointsRequiredPerSquare;
-            int squareEndPoints = (i + 1) * pointsRequiredPerSquare;
             
             float squareProgress = 0f;
             
@@ -215,13 +225,35 @@ public class FarmingProgressUI : MonoBehaviour
         }
     }
 
+    private int squaresCompleted = 0; // Track completed squares for money earning
+    private PlayerEconomy playerEconomy;
+
+    void FindEconomy()
+    {
+        if (playerEconomy == null)
+        {
+            playerEconomy = FindFirstObjectByType<PlayerEconomy>();
+        }
+    }
+
     void OnProgressBarFull()
     {
         Debug.Log("Farming progress bar completed!");
-        // Add celebration effect, sound, or reset functionality here
-        
-        // Optional: Auto-reset after completion
         Invoke(nameof(ResetProgress), 1f);
+    }
+
+    /// <summary>
+    /// Called every time a square reaches 100% opacity (every pointsRequiredPerSquare points).
+    /// </summary>
+    void OnSquareCompleted(int squareIndex)
+    {
+        FindEconomy();
+        if (playerEconomy != null)
+        {
+            int moneyEarned = playerEconomy.MoneyPerSquare;
+            playerEconomy.EarnMoney(moneyEarned);
+            Debug.Log($"[ProgressUI] Square {squareIndex} completed! Earned ${moneyEarned}");
+        }
     }
 
     // Public methods for external control

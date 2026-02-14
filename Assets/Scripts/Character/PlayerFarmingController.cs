@@ -12,6 +12,9 @@ namespace Character
         WaterResource waterResource;
 
         bool isWateringActive; // prevents multi-drain per animation
+        float wateringStartTime;
+        const float WATERING_ANIMATION_DURATION = 5.6f;
+        const float MAX_WATERING_DURATION = 8f; // Safety timeout (extra buffer beyond animation)
 
         void Start()
         {
@@ -30,6 +33,16 @@ namespace Character
                 Debug.LogError("No WaterResource found on Player.");
         }
 
+        void Update()
+        {
+            // Safety: force-reset watering state if stuck for too long
+            if (isWateringActive && Time.time - wateringStartTime > MAX_WATERING_DURATION)
+            {
+                Debug.LogWarning("[PlayerFarmingController] Watering stuck for too long - forcing reset!");
+                StopWatering();
+            }
+        }
+
         // =============================
         // SWITCH SELECTOR
         // =============================
@@ -44,12 +57,30 @@ namespace Character
         // =============================
         public void OnInteract(InputValue value)
         {
+            // IMPORTANT: E key is bound to Interact but we don't want it to trigger watering
+            // Only allow Space (primary interact key) to actually interact
+            // User should remove E binding from Input Actions, or we filter it here:
+            if (Keyboard.current != null && Keyboard.current.eKey.isPressed)
+            {
+                return; // Ignore E key presses
+            }
+            
+            if (selectorManager == null)
+            {
+                Debug.LogError("[PlayerFarmingController] SelectorManager is null!");
+                return;
+            }
+            
             FarmTile tile = selectorManager.GetSelectedTile();
-            if (tile == null) return;
+            if (tile == null)
+            {
+                return;
+            }
 
-            tile.Interact();
+            // Use InteractWithWater to gate watering behind water resource
+            bool success = tile.InteractWithWater(waterResource);
 
-            if (tile.GetCondition == FarmTile.Condition.Watered)
+            if (success && tile.GetCondition == FarmTile.Condition.Watered)
             {
                 TryWater();
             }
@@ -65,41 +96,59 @@ namespace Character
         }
 
         // =============================
-        // CORE WATER LOGIC
+        // CORE WATER LOGIC (animation only - water consumption handled by FarmTile.InteractWithWater)
         // =============================
         void TryWater()
         {
-            if (!animatedController || waterResource == null)
+            if (!animatedController)
                 return;
 
-            // 🚫 Already watering → block extra drains
+            // Cancel any pending StopWatering calls (safety)
+            CancelInvoke(nameof(StopWatering));
+
+            // If already watering, restart the animation smoothly
             if (isWateringActive)
-                return;
-
-            // 🚫 No water left
-            if (!waterResource.TryConsumeWater())
             {
-                Debug.Log("Out of water! Return to the shack to refill.");
-                return;
+                // Restart animation from beginning without transitioning out
+                animatedController.RestartWateringAnimation();
+            }
+            else
+            {
+                // Start fresh animation
+                animatedController.SetWatering(true);
             }
 
-            // ✅ Lock draining until animation ends
+            // Lock until animation ends
             isWateringActive = true;
+            wateringStartTime = Time.time;
 
-            // Play watering animation
-            animatedController.SetWatering(true);
-
-            // NOTE:
-            // If using Animator State detection, you can remove this Invoke later
-            Invoke(nameof(StopWatering), 2.5f);
+            // Schedule stop after animation completes
+            Invoke(nameof(StopWatering), WATERING_ANIMATION_DURATION);
         }
 
         void StopWatering()
         {
+            Debug.Log("[PlayerFarmingController] StopWatering called - resetting animation state");
             isWateringActive = false;
 
             if (animatedController)
+            {
                 animatedController.SetWatering(false);
+                Debug.Log("[PlayerFarmingController] Called SetWatering(false)");
+            }
+        }
+
+        void OnDisable()
+        {
+            // Safety: cancel any pending invokes when disabled
+            CancelInvoke(nameof(StopWatering));
+            
+            // Reset state
+            if (isWateringActive && animatedController)
+            {
+                animatedController.SetWatering(false);
+                isWateringActive = false;
+            }
         }
     }
 }

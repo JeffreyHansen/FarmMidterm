@@ -9,7 +9,6 @@ namespace Character
         [Header("Raycast Settings")]
         [SerializeField] float maxRange = 10f;
         [SerializeField] LayerMask tileLayerMask = -1;
-        [SerializeField] bool useScreenCenter = true; // Default to true for rotating camera
         [SerializeField] LayerMask ignoreLayerMask = 0; // Player and other objects to ignore
         
         [Header("Camera Setup")]
@@ -29,54 +28,38 @@ namespace Character
 
         void PerformRaycast()
         {
-            Ray ray;
-            
-            if (useScreenCenter)
-            {
-                // Raycast from center of screen (ideal for rotating camera that follows player facing)
-                ray = raycastCamera.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0f));
-            }
-            else
-            {
-                // Raycast from mouse position (good for free-look camera or mouse-based selection)
-                Vector2 mousePosition = Mouse.current?.position.ReadValue() ?? Vector2.zero;
-                ray = raycastCamera.ScreenPointToRay(mousePosition);
-            }
+            // Always raycast from mouse position for precise control
+            Vector2 mousePosition = Mouse.current?.position.ReadValue() ?? Vector2.zero;
+            Ray ray = raycastCamera.ScreenPointToRay(mousePosition);
 
             FarmTile hitTile = null;
 
             // Get all hits and find the first valid farm tile
             RaycastHit[] hits = Physics.RaycastAll(ray, maxRange, tileLayerMask);
-            Debug.Log($"[RaycastSelector] Found {hits.Length} raycast hits");
             
             foreach (RaycastHit hit in hits)
             {
                 GameObject hitObject = hit.collider.gameObject;
-                Debug.Log($"[RaycastSelector] Checking hit: {hitObject.name} on layer {hitObject.layer}");
                 
                 // Skip if this object is on ignore layer (like player character)
                 if (((1 << hitObject.layer) & ignoreLayerMask) != 0)
                 {
-                    Debug.Log($"[RaycastSelector] Ignoring {hitObject.name} (ignore layer)");
                     continue;
                 }
                 
                 // Skip if this is the player character by name (backup check)
                 if (hitObject.name.Contains("Ch19") || hitObject.name.ToLower().Contains("player"))
                 {
-                    Debug.Log($"[RaycastSelector] Ignoring {hitObject.name} (player character)");
                     continue;
                 }
                 
                 // Check for FarmTile on the hit object or its parent
                 if (hit.collider.TryGetComponent<FarmTile>(out hitTile))
                 {
-                    Debug.Log($"[RaycastSelector] Found FarmTile on {hitObject.name}");
                     break; // Found a valid tile, stop looking
                 }
                 else if (hit.collider.transform.parent != null && hit.collider.transform.parent.TryGetComponent<FarmTile>(out hitTile))
                 {
-                    Debug.Log($"[RaycastSelector] Found FarmTile on parent of {hitObject.name}");
                     break; // Found a valid tile, stop looking
                 }
                 else
@@ -87,7 +70,6 @@ namespace Character
                     {
                         if (current.TryGetComponent<FarmTile>(out hitTile))
                         {
-                            Debug.Log($"[RaycastSelector] Found FarmTile on ancestor {current.name} of {hitObject.name}");
                             break;
                         }
                         current = current.parent;
@@ -95,8 +77,6 @@ namespace Character
                     
                     if (hitTile != null)
                         break; // Found a valid tile, stop looking
-                    else
-                        Debug.Log($"[RaycastSelector] No FarmTile found on {hitObject.name} or its hierarchy");
                 }
             }
 
@@ -108,23 +88,13 @@ namespace Character
         {
             if (!raycastCamera) return;
             
-            // Visualize the raycast in scene view
+            // Visualize the raycast in scene view (from mouse position)
             Vector3 rayOrigin = raycastCamera.transform.position;
-            Vector3 rayDirection;
+            Vector2 mousePosition = Mouse.current?.position.ReadValue() ?? Vector2.zero;
+            Ray mouseRay = raycastCamera.ScreenPointToRay(mousePosition);
             
-            if (useScreenCenter)
-            {
-                rayDirection = raycastCamera.transform.forward;
-            }
-            else
-            {
-                Vector3 mousePos = Input.mousePosition;
-                Ray mouseRay = raycastCamera.ScreenPointToRay(mousePos);
-                rayDirection = mouseRay.direction;
-            }
-
             Gizmos.color = Color.green;
-            Gizmos.DrawLine(rayOrigin, rayOrigin + rayDirection * maxRange);
+            Gizmos.DrawLine(rayOrigin, rayOrigin + mouseRay.direction * maxRange);
         }
     }
 }

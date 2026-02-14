@@ -22,13 +22,12 @@ namespace Character
         {
             Vector2 inputVector = inputValue.Get<Vector2>();
             moveController.Move(inputVector);
+        }
 
-            bool newRunningState = Keyboard.current.leftShiftKey.isPressed;
-            if (newRunningState != isRunning)
-            {
-                isRunning = newRunningState;
-                physicsMovement?.SetRunning(isRunning);
-            }
+        public void OnSprint(InputValue inputValue)
+        {
+            isRunning = inputValue.isPressed;
+            physicsMovement?.SetRunning(isRunning);
         }
 
         public void OnJump(InputValue inputValue)

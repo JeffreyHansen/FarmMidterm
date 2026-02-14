@@ -10,7 +10,7 @@ namespace Character
 
         [Header("Watering State Detection")]
         [SerializeField] private string wateringStateName = "Watering"; // <-- must match Animator state name
-        [SerializeField] private int wateringLayerIndex = 0;            // 0 = Base Layer
+        [SerializeField] private int wateringLayerIndex = 1;            // 1 = UpperBody Layer
 
         MovementController moveController;
         Animator animator;
@@ -18,6 +18,7 @@ namespace Character
 
         int wateringStateHash;
         bool lastRendererEnabled;
+        bool forceToolVisible; // Keep tool visible even if animator state changes
 
         void Start()
         {
@@ -35,10 +36,6 @@ namespace Character
             if (!animator)
             {
                 Debug.LogWarning($"No Animator found on {gameObject.name} or its children. AnimatedController will be disabled.", this);
-            }
-            else
-            {
-                Debug.Log($"Animator found on: {animator.gameObject.name}");
             }
 
             if (!moveController)
@@ -88,14 +85,24 @@ namespace Character
         {
             if (!wateringCanRenderer) return;
 
+            // If forced visible (during animation), keep it visible
+            if (forceToolVisible)
+            {
+                if (!lastRendererEnabled)
+                {
+                    wateringCanRenderer.enabled = true;
+                    lastRendererEnabled = true;
+                }
+                return;
+            }
+
             // Safety: layer index must exist
             if (wateringLayerIndex < 0 || wateringLayerIndex >= animator.layerCount)
                 wateringLayerIndex = 0;
 
             AnimatorStateInfo info = animator.GetCurrentAnimatorStateInfo(wateringLayerIndex);
 
-            // If watering is in a transition, you might want to keep it visible while either state is watering.
-            // We'll check both current and next state during transitions.
+            // If watering is in a transition, keep it visible
             bool isWateringNow = info.shortNameHash == wateringStateHash;
 
             if (!isWateringNow && animator.IsInTransition(wateringLayerIndex))
@@ -104,7 +111,7 @@ namespace Character
                 isWateringNow = next.shortNameHash == wateringStateHash;
             }
 
-            // Only set renderer when it changes (avoids spam + tiny perf win)
+            // Only set renderer when it changes
             if (isWateringNow != lastRendererEnabled)
             {
                 wateringCanRenderer.enabled = isWateringNow;
@@ -117,10 +124,63 @@ namespace Character
             if (animator)
             {
                 animator.SetBool("IsWatering", isWatering);
-                Debug.Log($"SetWatering: {isWatering}");
+                
+                // Force animator to process the state change immediately
+                if (!isWatering)
+                {
+                    // Force animator to update
+                    animator.Update(0f);
+                    
+                    // Double-check after a frame if we're still stuck
+                    StartCoroutine(VerifyAnimatorStateExit());
+                }
             }
 
-            // No direct renderer toggle here—renderer follows Animator state automatically.
+            // Force tool visible during entire animation
+            forceToolVisible = isWatering;
+        }
+
+        /// <summary>
+        /// Restart the watering animation from the beginning without transitioning out.
+        /// This provides a smooth restart when chaining multiple watering actions.
+        /// </summary>
+        public void RestartWateringAnimation()
+        {
+            if (animator)
+            {
+                // Directly restart the watering animation at frame 0 on the UpperBody layer
+                // This avoids the jumpy transition through the empty state
+                animator.Play("Watering", wateringLayerIndex, 0f);
+            }
+        }
+
+        private System.Collections.IEnumerator VerifyAnimatorStateExit()
+        {
+            yield return null; // Wait one frame
+            
+            if (animator != null)
+            {
+                AnimatorStateInfo currentState = animator.GetCurrentAnimatorStateInfo(wateringLayerIndex);
+                if (currentState.shortNameHash == wateringStateHash)
+                {
+                    Debug.LogWarning("[AnimatedController] Animator stuck in watering state, forcing exit to empty state");
+                    // Force the UpperBody layer to the "empty" state (default state on layer 1)
+                    animator.Play("empty", wateringLayerIndex, 0f);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Animation Event callback for showing/hiding tools.
+        /// Called by animation events in the Animator.
+        /// </summary>
+        public void SetTool(string tool)
+        {
+            if (wateringCanRenderer)
+            {
+                // Show watering can only if tool is "WateringCan"
+                wateringCanRenderer.enabled = (tool == "WateringCan");
+            }
         }
     }
 }

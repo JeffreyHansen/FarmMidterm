@@ -6,7 +6,7 @@ namespace Character
     public class PhysicsMovement : MovementController
     {
         [SerializeField] float drag = 0.5f;
-        [SerializeField] float rotationSpeed = 0.1f;
+        [SerializeField] float rotationSpeed = 10f; // Degrees-per-second feel (used as Slerp speed)
         
         [Header("Speed Settings")]
         [SerializeField] float walkSpeed = 2.5f;
@@ -20,7 +20,7 @@ namespace Character
 
         bool isGrounded;
         bool isRunning;
-        Vector3 currentMoveDirection;
+        Vector3 lastInputDirection; // Track last valid input direction for rotation
 
         protected override void Start()
         {
@@ -68,7 +68,12 @@ namespace Character
 
         void ApplyMovement()
         {
-            // Camera-relative movement (integrated from Doozy PlayerController)
+            // Skip if no input
+            if (moveInput.sqrMagnitude < 0.01f)
+                return;
+            
+            // Camera-relative movement direction
+            Vector3 moveDirection;
             if (cameraTransform)
             {
                 Vector3 camForward = cameraTransform.forward;
@@ -80,20 +85,21 @@ namespace Character
                 camForward.Normalize();
                 camRight.Normalize();
                 
-                currentMoveDirection = camForward * moveInput.y + camRight * moveInput.x;
+                moveDirection = camForward * moveInput.y + camRight * moveInput.x;
             }
             else
             {
-                // Fallback to world-relative movement
-                currentMoveDirection = new Vector3(moveInput.x, 0f, moveInput.y);
+                moveDirection = new Vector3(moveInput.x, 0f, moveInput.y);
             }
 
-            if (currentMoveDirection.sqrMagnitude > 1f)
-                currentMoveDirection.Normalize();
+            if (moveDirection.sqrMagnitude > 1f)
+                moveDirection.Normalize();
 
-            // Apply speed based on running state
-            float currentMaxSpeed = isRunning ? runSpeed : walkSpeed;
-            rb.AddForce(currentMoveDirection * acceleration, ForceMode.Acceleration);
+            // Store for rotation (only when there's actual input)
+            lastInputDirection = moveDirection;
+
+            // Apply force
+            rb.AddForce(moveDirection * acceleration, ForceMode.Acceleration);
         }
 
         // -------- COLLISION SUPPORT (Week 2–3 integration) --------
@@ -157,27 +163,20 @@ namespace Character
 
         void ApplyRotation()
         {
-            // Use velocity-based rotation like Doozy PlayerController (best practice)
-            Vector3 horizontal = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+            // Only rotate when there is active input (prevents phantom spinning)
+            if (moveInput.sqrMagnitude < 0.01f)
+                return;
+            
+            // Rotate toward input direction, not velocity
+            if (lastInputDirection.sqrMagnitude < 0.01f)
+                return;
 
-            if (horizontal.sqrMagnitude > 0.01f) // Use sqrMagnitude for better performance
-            {
-                if (rotationSpeed > 0f)
-                {
-                    // Smoothed rotation
-                    Quaternion targetRotation = Quaternion.LookRotation(horizontal.normalized);
-                    transform.rotation = Quaternion.Slerp(
-                        transform.rotation,
-                        targetRotation,
-                        rotationSpeed * Time.fixedDeltaTime
-                    );
-                }
-                else
-                {
-                    // Immediate rotation (like Doozy - most responsive)
-                    transform.rotation = Quaternion.LookRotation(horizontal);
-                }
-            }
+            Quaternion targetRotation = Quaternion.LookRotation(lastInputDirection.normalized);
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                targetRotation,
+                rotationSpeed * Time.fixedDeltaTime
+            );
         }
         
         public void SetRunning(bool running)

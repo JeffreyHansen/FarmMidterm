@@ -1,50 +1,68 @@
 using UnityEngine;
+using System;
 
 namespace Character
 {
     public class WaterResource : MonoBehaviour
     {
         [Header("Water Settings")]
-        [Range(0f, 100f)]
-        [SerializeField] private float waterPercent = 100f;
+        [SerializeField] private int maxWater = 10;
+        [SerializeField] private int currentWater = 10;
 
-        [SerializeField] private float drainPerUse = 10f;
-        [SerializeField] private float refillRatePerSecond = 60f;
+        /// <summary>Fires whenever water count changes (currentWater, maxWater)</summary>
+        public static event Action<int, int> OnWaterChanged;
 
-        public float WaterPercent => waterPercent;
-        public float Normalized => waterPercent / 100f;
-        public bool HasWater => waterPercent > 0f;
+        public int CurrentWater => currentWater;
+        public int MaxWater => maxWater;
+        public float Normalized => (float)currentWater / maxWater;
+        public bool HasWater => currentWater > 0;
 
-        bool isRefilling;
-
-        void Update()
+        void Start()
         {
-            if (isRefilling)
-            {
-                waterPercent += refillRatePerSecond * Time.deltaTime;
-                waterPercent = Mathf.Clamp(waterPercent, 0f, 100f);
-            }
+            OnWaterChanged?.Invoke(currentWater, maxWater);
         }
 
-        // Called when player waters
+        /// <summary>
+        /// Try to consume 1 unit of water. Returns true if successful.
+        /// </summary>
         public bool TryConsumeWater()
         {
-            if (waterPercent <= 0f)
+            if (currentWater <= 0)
                 return false;
 
-            waterPercent -= drainPerUse;
-            waterPercent = Mathf.Clamp(waterPercent, 0f, 100f);
-
-            Debug.Log($"Water remaining: {waterPercent}%");
+            currentWater--;
+            Debug.Log($"[Water] Used 1 water. Remaining: {currentWater}/{maxWater}");
+            OnWaterChanged?.Invoke(currentWater, maxWater);
             return true;
         }
 
-        public void StartRefill() => isRefilling = true;
-        public void StopRefill() => isRefilling = false;
+        /// <summary>
+        /// Add water units (from shop purchase or refill zone).
+        /// </summary>
+        public void AddWater(int amount)
+        {
+            currentWater = Mathf.Min(currentWater + amount, maxWater);
+            Debug.Log($"[Water] Refilled {amount}. Now: {currentWater}/{maxWater}");
+            OnWaterChanged?.Invoke(currentWater, maxWater);
+        }
 
+        /// <summary>
+        /// Fill water to maximum instantly.
+        /// </summary>
         public void FillInstant()
         {
-            waterPercent = 100f;
+            currentWater = maxWater;
+            OnWaterChanged?.Invoke(currentWater, maxWater);
+        }
+
+        /// <summary>
+        /// Increase max water capacity (upgrade).
+        /// </summary>
+        public void UpgradeCapacity(int newMax)
+        {
+            maxWater = newMax;
+            currentWater = Mathf.Min(currentWater, maxWater);
+            OnWaterChanged?.Invoke(currentWater, maxWater);
         }
     }
 }
